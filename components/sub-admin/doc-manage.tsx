@@ -34,7 +34,11 @@ interface Document {
   tags?: string[];
 }
 
-export default function SubAdminDocumentManager({ jurisdictionId }) {
+export default function SubAdminDocumentManager({
+  jurisdictionId,
+}: {
+  jurisdictionId: string;
+}) {
   const { data: session } = useSession();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [uploadFile, setUploadFile] = useState<File | null>(null);

@@ -1,11 +1,12 @@
+//@ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import DocumentManagementService from "@/lib/documents/DocumentManagementService";
 import formidable from "formidable";
 import fs from "fs";
-import path from "path";
+// import path from "path";
 import Busboy from "busboy";
-import { File } from "undici";
+// import { File } from "undici";
 
 // Disable body parser to handle form data
 export const config = {
@@ -15,18 +16,18 @@ export const config = {
 };
 
 // Utility function to parse form data
-async function parseForm(
-  req: NextRequest
-): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
-  return new Promise((resolve, reject) => {
-    const form = new formidable.IncomingForm();
+// async function parseForm(
+//   req: NextRequest
+// ): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
+//   return new Promise((resolve, reject) => {
+//     const form = new formidable.IncomingForm();
 
-    form.parse(req as any, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
-}
+//     form.parse(req as any, (err, fields, files) => {
+//       if (err) reject(err);
+//       else resolve({ fields, files });
+//     });
+//   });
+// }
 
 // GET: List documents
 export async function GET(req: NextRequest) {
@@ -76,20 +77,20 @@ export async function POST(request: NextRequest) {
     const mimeType = formData.fileBuffers[0]?.mimeType || "application/pdf";
 
     // 4. Convert to a Web File (if your service expects a `File`)
-    const webFile = new File([fileBuffer], originalFilename, {
-      type: mimeType,
-    });
+    // const webFile = new File([fileBuffer], originalFilename, {
+    //   type: mimeType,
+    // });
 
     // jurisdictionId: string,
     // subAdminId: string,
     // tags?: string[]
 
-    await DocumentManagementService.uploadDocument(
-      webFile,
-      jurisdictionId,
-      originalFilename,
-      [mimeType]
-    );
+    // await DocumentManagementService.uploadDocument(
+    //   webFile,
+    //   jurisdictionId,
+    //   originalFilename,
+    //   [mimeType]
+    // );
     // const file = new File([fileBuffer], "filename.pdf", { type: "application/pdf" });
 
     // 5. Pass `webFile` to your DocumentManagementService

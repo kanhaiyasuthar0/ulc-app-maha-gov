@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
+// 1) Define schema for sub-admin creation
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -41,16 +42,22 @@ interface AddSubAdminDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface Jurisdiction {
+  _id: string;
+  name: string;
+  // Add other fields if your schema has them
+}
+
 export function AddSubAdminDialog({
   open,
   onOpenChange,
 }: AddSubAdminDialogProps) {
-  const [jurisdictions, setJurisdictions] = useState([
-    { id: "1", name: "Mumbai" },
-    { id: "2", name: "Pune" },
-    { id: "3", name: "Thane" },
-  ]);
+  // 2) State to hold fetched jurisdictions
+  const [jurisdictions, setJurisdictions] = useState<Jurisdiction[]>([]);
+  const [isLoadingJurisdictions, setIsLoadingJurisdictions] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 3) React Hook Form setup
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -61,8 +68,31 @@ export function AddSubAdminDialog({
     },
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // 4) Fetch jurisdictions whenever the dialog opens
+  useEffect(() => {
+    if (!open) return;
 
+    const fetchJurisdictions = async () => {
+      try {
+        setIsLoadingJurisdictions(true);
+        const response = await fetch("/api/admin/jurisdictions");
+        if (!response.ok) {
+          throw new Error("Failed to fetch jurisdictions");
+        }
+        const data: Jurisdiction[] = await response.json();
+        setJurisdictions(data);
+      } catch (error) {
+        console.error("Error fetching jurisdictions:", error);
+        toast.error("Could not load jurisdictions");
+      } finally {
+        setIsLoadingJurisdictions(false);
+      }
+    };
+
+    fetchJurisdictions();
+  }, [open]);
+
+  // 5) Form submit handler
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
 
@@ -77,7 +107,6 @@ export function AddSubAdminDialog({
       if (!response.ok) throw new Error("Failed to create sub-admin");
 
       toast.success("Sub-admin has been created successfully.");
-
       form.reset();
       onOpenChange(false);
     } catch (error) {
@@ -100,6 +129,7 @@ export function AddSubAdminDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Name Field */}
             <FormField
               control={form.control}
               name="name"
@@ -114,6 +144,7 @@ export function AddSubAdminDialog({
               )}
             />
 
+            {/* Email Field */}
             <FormField
               control={form.control}
               name="email"
@@ -128,6 +159,7 @@ export function AddSubAdminDialog({
               )}
             />
 
+            {/* Password Field */}
             <FormField
               control={form.control}
               name="password"
@@ -142,6 +174,7 @@ export function AddSubAdminDialog({
               )}
             />
 
+            {/* Jurisdictions Field */}
             <FormField
               control={form.control}
               name="jurisdictions"
@@ -150,51 +183,60 @@ export function AddSubAdminDialog({
                   <div className="mb-4">
                     <FormLabel>Jurisdictions</FormLabel>
                   </div>
-                  <div className="space-y-2">
-                    {jurisdictions.map((jurisdiction) => (
-                      <FormField
-                        key={jurisdiction.id}
-                        control={form.control}
-                        name="jurisdictions"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={jurisdiction.id}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(
-                                    jurisdiction.id
-                                  )}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([
-                                          ...field.value,
-                                          jurisdiction.id,
-                                        ])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== jurisdiction.id
+
+                  {isLoadingJurisdictions ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Loading jurisdictions...
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {jurisdictions.map((jurisdiction) => (
+                        <FormField
+                          key={jurisdiction._id}
+                          control={form.control}
+                          name="jurisdictions"
+                          render={({ field }) => {
+                            const { value, onChange } = field;
+                            const isChecked = value.includes(jurisdiction._id);
+
+                            return (
+                              <FormItem
+                                key={jurisdiction._id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        onChange([...value, jurisdiction._id]);
+                                      } else {
+                                        onChange(
+                                          value.filter(
+                                            (val) => val !== jurisdiction._id
                                           )
                                         );
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {jurisdiction.name}
-                              </FormLabel>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    ))}
-                  </div>
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {jurisdiction.name}
+                                </FormLabel>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Submit Button */}
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Creating..." : "Create Sub Admin"}

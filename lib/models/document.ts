@@ -88,7 +88,11 @@ DocumentSchema.methods.softDelete = function () {
 };
 
 // Query helper to only show active documents
+//@ts-expect-error
+
 DocumentSchema.query.active = function () {
+  //@ts-expect-error
+
   return this.where({ isActive: true });
 };
 

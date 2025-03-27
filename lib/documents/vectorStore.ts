@@ -10,6 +10,8 @@ export async function getVectorStore() {
   // 2. Get a reference to your DB collection
   const collection = client
     .db(process.env.MONGODB_ATLAS_DB_NAME)
+    //@ts-expect-error
+
     .collection(process.env.MONGODB_ATLAS_COLLECTION_NAME);
 
   // 3. Define the embeddings

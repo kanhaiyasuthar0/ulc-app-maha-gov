@@ -7,13 +7,13 @@ import React from "react";
 
 const ConsumerChat = () => {
   return (
-    <DashboardShell>
+    <>
       {/* <DashboardHeader
         heading="Consumer Dashboard"
         text="Manage your assigned jurisdictions and operations."
       /> */}
       <ConsumerDashboard />
-    </DashboardShell>
+    </>
   );
 };
 

@@ -52,7 +52,7 @@ const PdfUpload: React.FC<PdfUploadProps> = ({ jurisdictionId }) => {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen 
+      className="flex flex-col items-center justify-center h-96 
                     bg-background text-text-secondary dark:bg-background-dark 
                     dark:text-text-primary px-4 py-8"
     >

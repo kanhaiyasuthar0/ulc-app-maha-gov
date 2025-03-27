@@ -13,12 +13,12 @@ export default async function AdminDashboardPage() {
   }
 
   return (
-    <DashboardShell>
+    <>
       <DashboardHeader
         heading="Admin Dashboard"
         text="Manage sub-admins, jurisdictions, and platform settings."
       />
       <AdminDashboard />
-    </DashboardShell>
+    </>
   );
 }

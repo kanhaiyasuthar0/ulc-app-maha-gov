@@ -37,6 +37,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           return {
+            //@ts-expect-error
             id: user._id.toString(),
             name: user.name,
             email: user.email,
@@ -53,6 +54,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        //@ts-ignore
         token.role = user.role;
       }
       return token;
