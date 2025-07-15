@@ -1,7 +1,4 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+export default {
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",
@@ -13,7 +10,7 @@ const nextConfig: NextConfig = {
     "mongoose",
     "mongoose/dist/browser.umd.js",
   ],
-  webpack: (config) => {
+  webpack: (config: any) => {
     config.experiments = {
       topLevelAwait: true,
       layers: true,
@@ -22,5 +19,3 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
 };
-
-export default nextConfig;

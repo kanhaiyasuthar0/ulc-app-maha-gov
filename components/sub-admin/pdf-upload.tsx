@@ -10,6 +10,7 @@ const PdfUpload: React.FC<PdfUploadProps> = ({ jurisdictionId }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [documentStatus, setDocumentStatus] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -25,26 +26,31 @@ const PdfUpload: React.FC<PdfUploadProps> = ({ jurisdictionId }) => {
     try {
       setIsLoading(true);
       setStatusMessage("Uploading... Please wait.");
+      setDocumentStatus(null);
 
       const formData = new FormData();
       formData.append("pdfFile", selectedFile);
       formData.append("jurisdictionId", jurisdictionId);
+      // Optionally add subAdminId if available
 
       const response = await fetch("/api/pdf-embeddings", {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error("Error uploading PDF and embeddings.");
-      }
-
       const data = await response.json();
+      if (!response.ok) {
+        setStatusMessage(data.message || "Error uploading PDF and embeddings.");
+        setDocumentStatus("failed");
+        return;
+      }
       setStatusMessage(data.message || "PDF uploaded and embeddings created!");
+      setDocumentStatus(data.status || null);
     } catch (error: any) {
       setStatusMessage(
         error?.message || "An error occurred while uploading the PDF."
       );
+      setDocumentStatus("failed");
     } finally {
       setIsLoading(false);
     }
@@ -97,6 +103,11 @@ const PdfUpload: React.FC<PdfUploadProps> = ({ jurisdictionId }) => {
 
         {statusMessage && (
           <p className="text-center mt-2 font-medium">{statusMessage}</p>
+        )}
+        {documentStatus && (
+          <p className="text-center mt-2 font-semibold">
+            Status: {documentStatus === 'ready' ? '✅ Ready' : documentStatus === 'processing' ? '⏳ Processing' : '❌ Failed'}
+          </p>
         )}
       </div>
     </div>

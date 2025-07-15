@@ -116,12 +116,27 @@ class DocumentManagementService {
       const pdfBuffer = await file.arrayBuffer();
       const pdfData = await pdf(Buffer.from(pdfBuffer));
 
-      // 2. Split text into smaller chunks
+      // 2. Split text into paragraphs, then further chunk if needed
       const splitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1000,
         chunkOverlap: 200,
       });
-      const textChunks = await splitter.createDocuments([pdfData.text]);
+      const paragraphs = pdfData.text.split(/\n\n+/).filter(p => p.trim().length > 0);
+      let textChunks: any[] = [];
+      for (let i = 0; i < paragraphs.length; i++) {
+        const para = paragraphs[i];
+        const paraChunks = await splitter.createDocuments([para]);
+        paraChunks.forEach(chunk => {
+          chunk.metadata = {
+            ...chunk.metadata,
+            jurisdictionId,
+            subAdminId,
+            source: "pdf-upload",
+            paragraphIndex: i,
+          };
+        });
+        textChunks = textChunks.concat(paraChunks);
+      }
 
       // 3. Convert each chunk into a LangChain `Document`
       const docsForEmbedding = textChunks.map(

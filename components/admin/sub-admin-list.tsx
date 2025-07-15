@@ -15,7 +15,8 @@ import { Edit, Trash2 } from "lucide-react";
 import { EditSubAdminDialog } from "@/components/admin/edit-sub-admin-dialog";
 
 interface SubAdmin {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   email: string;
   jurisdictions: string[];
@@ -114,44 +115,48 @@ export function SubAdminList() {
               </TableCell>
             </TableRow>
           ) : (
-            subAdmins.map((subAdmin) => (
-              <TableRow key={subAdmin.id}>
-                <TableCell className="font-medium">{subAdmin.name}</TableCell>
-                <TableCell>{subAdmin.email}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {subAdmin.jurisdictions.map((jurisdiction) => (
-                      <Badge key={jurisdiction} variant="outline">
-                        {jurisdiction}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {new Date(subAdmin.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(subAdmin)}
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(subAdmin.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
+            subAdmins.map((subAdmin) => {
+              const key = subAdmin.id || subAdmin._id;
+              if (!key) return null; // skip if no unique key
+              return (
+                <TableRow key={key}>
+                  <TableCell className="font-medium">{subAdmin.name}</TableCell>
+                  <TableCell>{subAdmin.email}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {subAdmin.jurisdictions.map((jurisdiction) => (
+                        <Badge key={jurisdiction} variant="outline">
+                          {jurisdiction}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(subAdmin.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(subAdmin)}
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(key)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>
@@ -159,7 +164,7 @@ export function SubAdminList() {
       <EditSubAdminDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        subAdmin={selectedSubAdmin}
+        subAdmin={selectedSubAdmin as any}
       />
     </div>
   );

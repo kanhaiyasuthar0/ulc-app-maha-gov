@@ -8,6 +8,8 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Document } from "langchain/document";
 import { v4 as uuidv4 } from "uuid";
+import cloudinary from "cloudinary";
+import { DocumentModel } from '@/lib/models/document';
 // --- 1) Initialize OpenAI clients
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -16,6 +18,12 @@ const openai = new OpenAI({
 const embeddingsModel = new OpenAIEmbeddings({
   apiKey: process.env.OPENAI_API_KEY,
   model: "text-embedding-3-large",
+});
+
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 /**
@@ -58,10 +66,21 @@ async function detectLanguage(text: string): Promise<string> {
   }
 }
 
-// --- 2) Extract PDF text
-async function extractTextFromPdf(buffer: Buffer): Promise<string> {
+// --- 2) Extract PDF text and pages
+async function extractTextAndPagesFromPdf(buffer: Buffer): Promise<{ pages: string[], fullText: string }> {
   const data = await pdfParse(buffer);
-  return data.text || "";
+  // pdf-parse returns text and a 'numpages' property, but not page-wise text by default
+  // We'll use a regex to split by page if possible (common for pdf-parse)
+  // This is a best-effort approach; for more accuracy, use pdfjs directly
+  const pageRegex = /\f/; // Form feed is a common page delimiter
+  let pages: string[] = [];
+  if (data.text.includes('\f')) {
+    pages = data.text.split(pageRegex);
+  } else {
+    // fallback: try to split by double newlines as a rough page delimiter
+    pages = data.text.split(/\n\n+/);
+  }
+  return { pages, fullText: data.text || "" };
 }
 
 // --- 3) Translate text to English
@@ -105,14 +124,14 @@ async function translateToEnglish(
 // --- 4) Comprehensive embedding creation
 export async function POST(request: Request) {
   try {
-    // Connect to database
     await connectToDatabase();
 
     // Parse form data
     const formData = await request.formData();
     const pdfFile = formData.get("pdfFile") as File | null;
     const jurisdictionId = formData.get("jurisdictionId") as string;
-    const sourceLanguage = formData.get("language") as string | null; // e.g., "hi", "mr", etc.
+    const subAdminId = formData.get("subAdminId") as string | undefined;
+    const sourceLanguage = formData.get("language") as string | null;
 
     if (!pdfFile || !jurisdictionId) {
       return NextResponse.json(
@@ -121,70 +140,111 @@ export async function POST(request: Request) {
       );
     }
 
-    // Convert File to Buffer
+    // Upload PDF to Cloudinary
+    const uploadResult = await cloudinary.v2.uploader.upload_stream(
+      { resource_type: "raw", folder: "pdfs" },
+      async (error, result) => {
+        if (error || !result) {
+          throw new Error("Cloudinary upload failed");
+        }
+      }
+    );
     const arrayBuffer = await pdfFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const stream = uploadResult;
+    stream.end(buffer);
+    const cloudinaryUrl = (await new Promise((resolve, reject) => {
+      cloudinary.v2.uploader.upload_stream(
+        { resource_type: "raw", folder: "pdfs" },
+        (error, result) => {
+          if (error || !result) reject(error || new Error("No result from Cloudinary"));
+          else resolve(result.secure_url);
+        }
+      ).end(buffer);
+    })) as string;
 
-    // 1) Extract original text from PDF
-    const originalText = await extractTextFromPdf(buffer);
-    if (!originalText.trim()) {
-      return NextResponse.json(
-        { message: "No text extracted from PDF." },
-        { status: 400 }
-      );
-    }
-
-    // 2) Translate to English if needed
-    const translatedText = await translateToEnglish(
-      originalText,
-      sourceLanguage || undefined
-    );
-
-    // 3) Use advanced text splitter for chunking
-    const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1000,
-      chunkOverlap: 200,
+    // Create Document record (status: processing)
+    const document = await DocumentModel.create({
+      jurisdictionId,
+      subAdminId: subAdminId || 'unknown',
+      fileName: pdfFile.name,
+      fileUrl: cloudinaryUrl,
+      fileType: 'pdf',
+      metadata: {
+        originalName: pdfFile.name,
+        size: buffer.length,
+        uploadedAt: new Date(),
+      },
+      status: 'processing',
     });
 
-    // Split translated text into Documents
-    const docs = await textSplitter.splitDocuments([
-      new Document({
-        pageContent: translatedText,
-        metadata: {
-          originalLanguage: sourceLanguage || "auto",
-          filename: pdfFile.name || "unknown.pdf",
-        },
-      }),
-    ]);
-
-    // 4) Generate embeddings for these chunked documents
-    const embeddings = await embeddingsModel.embedDocuments(
-      docs.map((doc) => doc.pageContent)
-    );
-    const pdfId = uuidv4();
-
-    // 5) Insert chunks with embeddings into the database
-    const documentsToInsert = docs.map((doc, i) => ({
-      pdfId,
-      jurisdictionId,
-      filename: doc.metadata.filename,
-      originalLanguage: doc.metadata.originalLanguage,
-      text: doc.pageContent, // English translation
-      originalText, // Keep original text for reference
-      embeddings: embeddings[i],
-    }));
-
-    const result = await PDFEmbedding.insertMany(documentsToInsert);
-
+    let status: 'ready' | 'failed' = 'ready';
+    let result = [];
+    let pdfId = String(document._id);
+    try {
+      // Extract text and pages
+      const { pages, fullText: originalText } = await extractTextAndPagesFromPdf(buffer);
+      if (!originalText.trim()) {
+        throw new Error('No text extracted from PDF.');
+      }
+      // Translate to English if needed
+      const translatedText = await translateToEnglish(
+        originalText,
+        sourceLanguage || undefined
+      );
+      // Chunk by paragraph, associate with page number
+      let docs: Document[] = [];
+      let paraIdx = 0;
+      for (let pageNum = 0; pageNum < pages.length; pageNum++) {
+        const page = pages[pageNum];
+        const paragraphs = page.split(/\n\n+/).filter(p => p.trim().length > 0);
+        for (let i = 0; i < paragraphs.length; i++) {
+          const para = paragraphs[i];
+          docs.push(new Document({
+            pageContent: para,
+            metadata: {
+              originalLanguage: sourceLanguage || "auto",
+              filename: pdfFile.name || "unknown.pdf",
+              paragraphIndex: paraIdx,
+              pageNumber: pageNum + 1,
+            },
+          }));
+          paraIdx++;
+        }
+      }
+      // Generate embeddings
+      const embeddings = await embeddingsModel.embedDocuments(
+        docs.map((doc) => doc.pageContent)
+      );
+      // Insert chunks with embeddings
+      const documentsToInsert = docs.map((doc, i) => ({
+        pdfId,
+        jurisdictionId,
+        filename: doc.metadata.filename,
+        originalLanguage: doc.metadata.originalLanguage,
+        text: doc.pageContent,
+        originalText,
+        embeddings: embeddings[i],
+        cloudinaryUrl,
+        paragraphIndex: doc.metadata.paragraphIndex,
+        pageNumber: doc.metadata.pageNumber,
+      }));
+      result = await PDFEmbedding.insertMany(documentsToInsert);
+      // Update document status to ready
+      await DocumentModel.findByIdAndUpdate(pdfId, { status: 'ready' });
+    } catch (err) {
+      status = 'failed';
+      await DocumentModel.findByIdAndUpdate(pdfId, { status: 'failed' });
+      return NextResponse.json(
+        { message: 'Error processing PDF.', details: err instanceof Error ? err.message : '' },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
       {
         message: `PDF uploaded and embeddings created successfully in ${result.length} chunks.`,
-        translationDetails: {
-          originalLanguage: sourceLanguage || "auto",
-          translatedToEnglish: true,
-        },
-        pdfEmbedding: result,
-        pdfId,
+        documentId: pdfId,
+        status,
       },
       { status: 201 }
     );

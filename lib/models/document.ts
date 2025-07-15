@@ -19,6 +19,7 @@ export interface IDocument extends MongooseDoc {
   };
   tags?: string[]; // Optional tags for better organization
   isActive: boolean; // To soft delete documents
+  status?: 'processing' | 'ready' | 'failed'; // Track processing state
 }
 
 const DocumentSchema = new Schema<IDocument>(
@@ -74,6 +75,11 @@ const DocumentSchema = new Schema<IDocument>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    status: {
+      type: String,
+      enum: ['processing', 'ready', 'failed'],
+      default: 'processing',
     },
   },
   {

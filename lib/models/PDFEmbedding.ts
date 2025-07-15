@@ -6,6 +6,10 @@ export interface IPDFEmbedding extends Document {
   filename: string;
   text?: string;
   embeddings?: number[];
+  paragraphIndex?: number;
+  originalText?: string;
+  cloudinaryUrl?: string;
+  pageNumber?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +34,18 @@ const PDFEmbeddingSchema = new Schema<IPDFEmbedding>(
     },
     embeddings: {
       type: [Number],
+    },
+    paragraphIndex: {
+      type: Number,
+    },
+    originalText: {
+      type: String,
+    },
+    cloudinaryUrl: {
+      type: String,
+    },
+    pageNumber: {
+      type: Number,
     },
   },
   { timestamps: true }

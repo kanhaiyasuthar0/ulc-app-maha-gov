@@ -1,129 +1,106 @@
-"use client"; // Required if you're using Next.js App Router and framer-motion in a page/component
+"use client";
 
-import Link from "next/link";
-import { motion } from "framer-motion";
-import ConditionalAuthBlock from "@/components/conditional-auth";
+import Image from 'next/image';
+import { FaUserShield, FaUserTie, FaUserFriends } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 export default function Home() {
-  return (
-    <div className="min-h-screen flex flex-col bg-background dark:bg-background-dark text-text-secondary dark:text-text-primary">
-      {/* HERO SECTION */}
-      <header className="container mx-auto px-6 py-16 flex flex-col items-center justify-center text-center">
-        <motion.h1
-          className="text-5xl md:text-6xl font-bold tracking-tight mb-4"
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-        >
-          Welcome to Our{" "}
-          <span className="bg-black text-white rounded mx-1 p-1">ULC CHAT</span>
-          Platform
-        </motion.h1>
-        <motion.p
-          className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mb-8"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-        >
-          Built for Maharashtra Govt to manage documents by jurisdiction.
-          Citizens can chat with PDFs to understand laws in simple language.
-        </motion.p>
+  const router = useRouter();
+  const { data: session, status } = useSession();
 
-        {/* <motion.div
-          className="flex gap-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.4 }}
-        >
-          <Link
-            href="/login"
-            className="px-6 py-3 bg-primary dark:bg-primary-dark text-white rounded-md font-semibold hover:bg-primary-dark transition-colors"
-          >
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="px-6 py-3 bg-transparent border border-primary dark:border-primary-dark text-primary dark:text-primary-dark rounded-md font-semibold hover:bg-primary hover:text-white hover:dark:bg-primary-dark transition-colors"
-          >
-            Register
-          </Link>
-        </motion.div> */}
-        <ConditionalAuthBlock />
+  const handleUploadClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    e.preventDefault();
+    if (!session) {
+      router.push('/login');
+    } else {
+      router.push('/dashboard/upload');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#f5f7fa] to-[#e3f2fd] flex flex-col">
+      {/* Header */}
+      <header className="bg-white shadow flex items-center px-6 py-4">
+        <Image src="/maharashtra-logo.jpg" alt="Maharashtra Logo" width={60} height={60} />
+        <div className="ml-4 flex-1">
+          <h1 className="text-3xl font-extrabold text-[#1a237e] tracking-tight">Urban Land Ceiling Maharashtra Portal</h1>
+          <p className="text-base text-[#374151] mt-1">Empowering Citizens with Transparent Access to Public Documents</p>
+        </div>
+        {/* <nav>
+          <a href="/docs" className="ml-8 text-[#1a237e] font-semibold hover:underline text-lg transition">Documentation</a>
+        </nav> */}
       </header>
 
-      {/* ROLES SECTION */}
-      <main className="flex-1 container mx-auto px-6 pb-16">
-        <motion.section
-          className="grid gap-8 md:grid-cols-3 mt-12"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{
-            hidden: { opacity: 0, y: 50 },
-            visible: {
-              opacity: 1,
-              y: 0,
-              transition: { staggerChildren: 0.2, duration: 0.5 },
-            },
-          }}
-        >
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col items-center justify-center py-10 w-full px-4">
+        {/* Welcome Section */}
+        <section className="w-full max-w-3xl text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1a237e] mb-2">Welcome to the Official Urban Land Ceiling <span className="text-4xl text-[#388e3c]">AI</span> Portal</h2>
+          <p className="mb-6 text-[#374151] text-lg">
+            Access, upload, and query public government documents with ease. Citizens can ask questions about uploaded documents, and government officials can upload new documents for public access.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/dashboard/upload"
+              onClick={handleUploadClick}
+              className="bg-[#ff9800] hover:bg-[#fb8c00] text-white font-semibold py-3 px-6 rounded-lg shadow transition text-lg"
+            >
+              Upload Document
+            </a>
+            <a
+              href="/public-chat"
+              className="bg-[#388e3c] hover:bg-[#2e7d32] text-white font-semibold py-3 px-6 rounded-lg shadow transition text-lg"
+            >
+              Ask a Question
+            </a>
+          </div>
+          <p className="mt-4 text-[#388e3c] text-base font-medium">No login required for citizens to ask questions!</p>
+        </section>
+
+        {/* Roles Section */}
+        <section className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {/* Admin Card */}
-          <motion.div
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
-            variants={{
-              hidden: { opacity: 0, y: 50 },
-              visible: { opacity: 1, y: 0 },
-            }}
-          >
-            <h3 className="text-xl font-bold mb-3 text-primary dark:text-primary-dark">
-              Admin Role
-            </h3>
-            <p className="text-gray-700 dark:text-gray-300">
-              The Admin can manage sub-admins, create jurisdictions, and oversee
-              the entire platform from a modern dashboard.
-            </p>
-          </motion.div>
-
+          <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center hover:shadow-2xl transition">
+            <FaUserShield className="text-4xl text-[#1a237e] mb-2" />
+            <h3 className="text-lg font-bold text-[#1a237e] mb-1">Admin (IAS Officer)</h3>
+            <p className="text-sm text-[#374151] mb-2">Full control over the portal. Can manage sub-admins, oversee all documents, and ensure compliance.</p>
+            <div className="flex flex-col items-center mt-2">
+              <Image src="/ias-avatar.png" alt="IAS Officer" width={48} height={48} className="rounded-full mb-1" />
+              <span className="font-semibold text-[#1a237e]">Shri. Ajay Mehta, IAS</span>
+              <span className="text-xs text-[#374151]">Principal Secretary</span>
+              <span className="text-xs text-[#374151]">Mantralaya, Mumbai</span>
+            </div>
+          </div>
           {/* Sub-Admin Card */}
-          <motion.div
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
-            variants={{
-              hidden: { opacity: 0, y: 50 },
-              visible: { opacity: 1, y: 0 },
-            }}
-          >
-            <h3 className="text-xl font-bold mb-3 text-primary dark:text-primary-dark">
-              Sub-Admin Role
-            </h3>
-            <p className="text-gray-700 dark:text-gray-300">
-              The Sub-Admin can manage assigned jurisdictions, upload PDFs/docs
-              to generate embeddings, and use a chat interface.
-            </p>
-          </motion.div>
-
+          <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center hover:shadow-2xl transition">
+            <FaUserTie className="text-4xl text-[#1565c0] mb-2" />
+            <h3 className="text-lg font-bold text-[#1565c0] mb-1">Sub-Admin</h3>
+            <p className="text-sm text-[#374151] mb-2">Manages assigned jurisdictions, uploads documents, and helps keep the portal updated for their region.</p>
+            <div className="flex flex-col items-center mt-2">
+              <span className="font-semibold text-[#1565c0]">Regional ULC Officer</span>
+              <span className="text-xs text-[#374151]">District/City Level</span>
+            </div>
+          </div>
           {/* Consumer Card */}
-          <motion.div
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm"
-            variants={{
-              hidden: { opacity: 0, y: 50 },
-              visible: { opacity: 1, y: 0 },
-            }}
-          >
-            <h3 className="text-xl font-bold mb-3 text-primary dark:text-primary-dark">
-              Consumer Role
-            </h3>
-            <p className="text-gray-700 dark:text-gray-300">
-              A user who registers by default becomes a Consumer. They can log
-              in to chat or access personalized content and services.
-            </p>
-          </motion.div>
-        </motion.section>
+          <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center hover:shadow-2xl transition">
+            <FaUserFriends className="text-4xl text-[#388e3c] mb-2" />
+            <h3 className="text-lg font-bold text-[#388e3c] mb-1">Citizen (Consumer)</h3>
+            <p className="text-sm text-[#374151] mb-2">Any citizen can ask questions about public documents, get instant answers, and access government information easily.</p>
+            <div className="flex flex-col items-center mt-2">
+              <span className="font-semibold text-[#388e3c]">You!</span>
+              <span className="text-xs text-[#374151]">Maharashtra Resident</span>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-gray-100 dark:bg-gray-700 py-6">
-        <div className="container mx-auto text-center text-gray-500 dark:text-gray-300">
-          © 2025 ULC CHAT Web App. All rights reserved.
+      {/* Footer */}
+      <footer className="bg-white text-[#374151] text-center py-4 border-t mt-auto">
+        &copy; {new Date().getFullYear()} Government of Maharashtra. All rights reserved.
+        <div className="mt-2 text-xs">
+          <a href="/privacy" className="underline mr-4">Privacy Policy</a>
+          <a href="/rti" className="underline">RTI</a>
         </div>
       </footer>
     </div>
