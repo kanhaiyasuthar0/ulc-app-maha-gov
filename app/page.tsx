@@ -32,7 +32,7 @@ export default function Home() {
             <span className="text-lg font-bold text-[#1a237e] leading-tight">Govt of Maharashtra</span>
             <span className="text-base text-[#374151] leading-tight">Urban development department - ULC</span>
             <span className="text-base font-semibold text-[#1a237e] leading-tight mt-1">Office of the Collector and Competent Authority - ULC (Brihanmumbai)</span>
-            <span className="text-sm text-[#374151]">(Shri. Saurabh Kariyar, IAS)</span>
+            <span className="text-sm text-[#374151]">(Shri. Saurabh Katiyar, IAS)</span>
           </div>
         </div>
         <div className="flex-1 flex flex-col md:items-end items-center mt-4 md:mt-0">
@@ -75,7 +75,7 @@ export default function Home() {
             <h3 className="text-lg font-bold text-[#1a237e] mb-1">Admin (IAS Officer)</h3>
             <p className="text-sm text-[#374151] mb-2">Full control over the portal. Can manage sub-admins, oversee all documents, and ensure compliance.</p>
             <div className="flex flex-col items-center mt-2">
-              <span className="font-semibold text-[#1a237e]">Shri. Saurabh Kariyar, IAS</span>
+              <span className="font-semibold text-[#1a237e]">Shri. Saurabh Katiyar, IAS</span>
               <span className="text-xs text-[#374151]">Collector & Competent Authority, ULC (Brihanmumbai)</span>
             </div>
           </div>

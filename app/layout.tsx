@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     "AI portal",
     "citizen services",
     "Brihanmumbai",
-    "Saurabh Kariyar IAS",
+    "Saurabh Katiyar IAS",
     "Collector ULC",
     "government transparency"
   ],
