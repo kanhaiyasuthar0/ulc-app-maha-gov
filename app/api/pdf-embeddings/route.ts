@@ -195,8 +195,10 @@ export async function POST(request: Request) {
       // Chunk by paragraph, associate with page number
       let docs: Document[] = [];
       let paraIdx = 0;
-      for (let pageNum = 0; pageNum < pages.length; pageNum++) {
-        const page = pages[pageNum];
+      // Use translatedText for chunking and embedding
+      const translatedPages = translatedText.split(/\n\n+/);
+      for (let pageNum = 0; pageNum < translatedPages.length; pageNum++) {
+        const page = translatedPages[pageNum];
         const paragraphs = page.split(/\n\n+/).filter(p => p.trim().length > 0);
         for (let i = 0; i < paragraphs.length; i++) {
           const para = paragraphs[i];
@@ -207,12 +209,13 @@ export async function POST(request: Request) {
               filename: pdfFile.name || "unknown.pdf",
               paragraphIndex: paraIdx,
               pageNumber: pageNum + 1,
+              originalText: originalText, // Store original for reference
             },
           }));
           paraIdx++;
         }
       }
-      // Generate embeddings
+      // Generate embeddings from translated English text
       const embeddings = await embeddingsModel.embedDocuments(
         docs.map((doc) => doc.pageContent)
       );
@@ -222,8 +225,8 @@ export async function POST(request: Request) {
         jurisdictionId,
         filename: doc.metadata.filename,
         originalLanguage: doc.metadata.originalLanguage,
-        text: doc.pageContent,
-        originalText,
+        text: doc.pageContent, // English chunk
+        originalText: doc.metadata.originalText, // Store original
         embeddings: embeddings[i],
         cloudinaryUrl,
         paragraphIndex: doc.metadata.paragraphIndex,

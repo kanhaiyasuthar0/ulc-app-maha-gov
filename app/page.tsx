@@ -13,36 +13,45 @@ export default function Home() {
     e.preventDefault();
     if (!session) {
       router.push('/login');
+    } else if (session.user?.role === 1) {
+      router.push('/dashboard/admin');
+    } else if (session.user?.role === 2) {
+      router.push('/dashboard/sub-admin');
     } else {
-      router.push('/dashboard/upload');
+      router.push('/dashboard/consumer');
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f5f7fa] to-[#e3f2fd] flex flex-col">
-      {/* Header */}
-      <header className="bg-white shadow flex items-center px-6 py-4">
-        <Image src="/maharashtra-logo.jpg" alt="Maharashtra Logo" width={60} height={60} />
-        <div className="ml-4 flex-1">
-          <h1 className="text-3xl font-extrabold text-[#1a237e] tracking-tight">Urban Land Ceiling Maharashtra Portal</h1>
+      {/* Unified Top Header */}
+      <header className="bg-white shadow flex flex-col md:flex-row items-center px-6 py-4 border-b">
+        <div className="flex items-center w-full md:w-auto justify-center md:justify-start">
+          <Image src="/maharashtra-logo.jpg" alt="Maharashtra Logo" width={60} height={60} className="mr-4" />
+          <div className="flex flex-col text-center md:text-left">
+            <span className="text-lg font-bold text-[#1a237e] leading-tight">Govt of Maharashtra</span>
+            <span className="text-base text-[#374151] leading-tight">Urban development department - ULC</span>
+            <span className="text-base font-semibold text-[#1a237e] leading-tight mt-1">Office of the Collector and Competent Authority - ULC (Brihanmumbai)</span>
+            <span className="text-sm text-[#374151]">(Shri. Saurabh Kariyar, IAS)</span>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col md:items-end items-center mt-4 md:mt-0">
+          <h1 className="text-3xl font-extrabold text-[#1a237e] tracking-tight">ULC chatbot</h1>
           <p className="text-base text-[#374151] mt-1">Empowering Citizens with Transparent Access to Public Documents</p>
         </div>
-        {/* <nav>
-          <a href="/docs" className="ml-8 text-[#1a237e] font-semibold hover:underline text-lg transition">Documentation</a>
-        </nav> */}
       </header>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center py-10 w-full px-4">
         {/* Welcome Section */}
-        <section className="w-full max-w-3xl text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#1a237e] mb-2">Welcome to the Official Urban Land Ceiling <span className="text-4xl text-[#388e3c]">AI</span> Portal</h2>
+        <section className="w-full max-w-3xl text-center mb-10 mt-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1a237e] mb-2">Welcome to the Official <span className="text-4xl text-[#388e3c]">ULC chatbot</span></h2>
           <p className="mb-6 text-[#374151] text-lg">
             Access, upload, and query public government documents with ease. Citizens can ask questions about uploaded documents, and government officials can upload new documents for public access.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="/dashboard/upload"
+              href="#"
               onClick={handleUploadClick}
               className="bg-[#ff9800] hover:bg-[#fb8c00] text-white font-semibold py-3 px-6 rounded-lg shadow transition text-lg"
             >
@@ -66,10 +75,8 @@ export default function Home() {
             <h3 className="text-lg font-bold text-[#1a237e] mb-1">Admin (IAS Officer)</h3>
             <p className="text-sm text-[#374151] mb-2">Full control over the portal. Can manage sub-admins, oversee all documents, and ensure compliance.</p>
             <div className="flex flex-col items-center mt-2">
-              <Image src="/ias-avatar.png" alt="IAS Officer" width={48} height={48} className="rounded-full mb-1" />
-              <span className="font-semibold text-[#1a237e]">Shri. Ajay Mehta, IAS</span>
-              <span className="text-xs text-[#374151]">Principal Secretary</span>
-              <span className="text-xs text-[#374151]">Mantralaya, Mumbai</span>
+              <span className="font-semibold text-[#1a237e]">Shri. Saurabh Kariyar, IAS</span>
+              <span className="text-xs text-[#374151]">Collector & Competent Authority, ULC (Brihanmumbai)</span>
             </div>
           </div>
           {/* Sub-Admin Card */}

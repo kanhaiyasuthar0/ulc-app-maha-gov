@@ -14,11 +14,9 @@ import ReactMarkdown from "react-markdown";
 // Fetch jurisdictions hook
 import remarkGfm from "remark-gfm";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Document as PDFDocument, Page, pdfjs } from 'react-pdf';
+import dynamic from 'next/dynamic';
 import { FaUser, FaRobot } from 'react-icons/fa';
 
-// Use local worker from public directory
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
 const useJurisdictions = () => {
   const [jurisdictions, setJurisdictions] = useState([]);
@@ -77,6 +75,7 @@ const PDFChatInterface = () => {
     originalQuery?: string;
     translatedQuery?: string;
     detectedLanguage?: string;
+    pdfUrls?: string[]; // Added pdfUrls to the interface
   }
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
@@ -85,7 +84,6 @@ const PDFChatInterface = () => {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [pdfModal, setPdfModal] = useState<{ url: string; pageNumber?: number } | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<{ [answerId: string]: boolean }>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -238,16 +236,17 @@ const PDFChatInterface = () => {
         )}
         <div className="h-96 overflow-y-auto mb-4 flex flex-col gap-2 p-2 bg-gray-50 rounded-lg border">
           {messages.map((m, idx) => {
-            let citations: any[] = [];
-            let content = m.content;
-            if (m.role === "assistant" && m.sources) {
-              citations = m.sources;
+            // Use pdfUrls from backend response for assistant messages
+            let pdfUrls: string[] = [];
+            if (m.role === "assistant" && m.pdfUrls) {
+              pdfUrls = m.pdfUrls;
             }
             // Detect 'no answer found' and show a friendly message
             const isNoAnswer =
               m.role === "assistant" &&
               /no answer found in the documents|i don\'t know/i.test(m.content);
             const isUser = m.role === "user";
+
             return (
               <div
                 key={m.id}
@@ -260,7 +259,7 @@ const PDFChatInterface = () => {
                   <div className={`rounded-2xl px-4 py-3 shadow ${isUser ? 'bg-blue-100 text-right' : 'bg-white'} ${isUser ? 'ml-2' : 'mr-2'} w-full`}>
                     <div className="text-sm">
                       <strong>{isUser ? "You" : "AI"}: </strong>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                     </div>
                     {isNoAnswer && (
                       <div className="mt-2 text-yellow-700 font-semibold">
@@ -268,14 +267,14 @@ const PDFChatInterface = () => {
                       </div>
                     )}
                     {/* Citations and chunk preview */}
-                    {m.role === "assistant" && citations.length > 0 && (
+                    {pdfUrls.length > 0 && (
                       <div className="mt-2 text-xs text-gray-600">
-                        <div className="font-semibold">Source:</div>
+                        <div className="font-semibold">Source PDF{pdfUrls.length > 1 ? 's' : ''}:</div>
                         <ul>
-                          {citations.slice(0, 1).map((src, i) => (
+                          {pdfUrls.map((url, i) => (
                             <li key={i}>
-                              <a href={src.cloudinaryUrl} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 hover:text-blue-800">
-                                View Source PDF{src.pageNumber ? ` (Page: ${src.pageNumber})` : ""}
+                              <a href={url} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 hover:text-blue-800">
+                                {url}
                               </a>
                             </li>
                           ))}
@@ -329,33 +328,6 @@ const PDFChatInterface = () => {
           </Button>
         </form>
       </CardContent>
-      <Dialog open={!!pdfModal} onOpenChange={() => setPdfModal(null)}>
-        <DialogContent className="max-w-3xl">
-          {pdfModal && (
-            <div>
-              <DialogTitle>PDF Preview</DialogTitle>
-              <div className="mt-2" style={{ height: 600, overflowY: 'auto' }}>
-                <PDFDocument
-                  file={pdfModal.url.endsWith('.pdf') ? pdfModal.url : pdfModal.url + '.pdf'}
-                  onLoadError={console.error}
-                  loading={<div>Loading PDF...</div>}
-                >
-                  {/* Cast as React.ReactNode to satisfy the type checker */}
-                  {((({ numPages }: { numPages?: number }) =>
-                    numPages
-                      ? (<>
-                          {Array.from({ length: numPages }, (_, i) => (
-                            <Page key={i + 1} pageNumber={i + 1} width={700} />
-                          ))}
-                        </>)
-                      : null
-                  ) as unknown as React.ReactNode)}
-                </PDFDocument>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };

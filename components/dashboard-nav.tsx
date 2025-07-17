@@ -40,34 +40,10 @@ export function DashboardNav() {
       roles: [1, 2, 3], // All roles can access their respective dashboards
     },
     {
-      title: "Sub Admins",
-      href: "/dashboard/admin/sub-admins",
-      icon: Users,
-      roles: [1], // Only admin can access
-    },
-    {
-      title: "Jurisdictions",
-      href: "/dashboard/admin/jurisdictions",
-      icon: MapPin,
-      roles: [1], // Only admin can access
-    },
-    {
-      title: "My Jurisdictions",
-      href: "/dashboard/sub-admin/jurisdictions",
-      icon: MapPin,
-      roles: [2], // Only sub-admin can access
-    },
-    {
       title: "Profile",
       href: "/dashboard/profile",
       icon: User,
       roles: [1, 2, 3], // All roles can access profile
-    },
-    {
-      title: "Settings",
-      href: "/dashboard/settings",
-      icon: Settings,
-      roles: [1, 2, 3], // All roles can access settings
     },
   ];
 

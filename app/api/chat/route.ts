@@ -14,13 +14,16 @@ interface ChunkDoc extends MongooseDoc {
   text?: string;
 }
 
-const FeedbackSchema = new mongoose.Schema({
-  answerId: String,
-  userQuery: String,
-  feedback: String, // 'helpful' or 'not_helpful'
-  createdAt: { type: Date, default: Date.now },
-});
-export const Feedback = mongoose.models.Feedback || mongoose.model('Feedback', FeedbackSchema);
+// Move Feedback model definition inside a function to avoid polluting the module export
+function getFeedbackModel() {
+  const FeedbackSchema = new mongoose.Schema({
+    answerId: String,
+    userQuery: String,
+    feedback: String, // 'helpful' or 'not_helpful'
+    createdAt: { type: Date, default: Date.now },
+  });
+  return mongoose.models.Feedback || mongoose.model('Feedback', FeedbackSchema);
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -467,7 +470,7 @@ export async function PUT(req: Request) {
   try {
     const { answerId, userQuery, feedback } = await req.json();
     await connectToDatabase();
-    await Feedback.create({ answerId, userQuery, feedback });
+    await getFeedbackModel().create({ answerId, userQuery, feedback });
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Feedback error', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500 });
@@ -478,7 +481,7 @@ export async function PUT(req: Request) {
 export async function GET(req: Request) {
   try {
     await connectToDatabase();
-    const feedback = await Feedback.find().sort({ createdAt: -1 }).limit(100).lean();
+    const feedback = await getFeedbackModel().find().sort({ createdAt: -1 }).limit(100).lean();
     return new Response(JSON.stringify(feedback), { status: 200 });
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Feedback fetch error', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500 });
@@ -499,20 +502,24 @@ export async function POST(req: Request) {
     const rerankedChunks = await rerankWithLLM(translatedQuery, mergedChunks.slice(0, 20));
     const topChunks = rerankedChunks.slice(0, 5); // Use top 5 reranked chunks
     const context = topChunks.map((d) => d.text).join("\n\n");
-    const sources = topChunks.map((d) => ({
-      docId: d._id,
-      filename: d.filename,
-      similarity: d.similarity,
-      paragraphIndex: d.paragraphIndex ?? null,
-      pageNumber: d.pageNumber,
-      cloudinaryUrl: d.cloudinaryUrl,
-    }));
+    // Debug: Log the chunks retrieved for this query
+    console.log("[ChatAPI] Detected language:", detectedLanguage);
+    console.log("[ChatAPI] Translated query:", translatedQuery);
+    console.log("[ChatAPI] Top Chunks:");
+    topChunks.forEach((chunk, idx) => {
+      console.log(`  Chunk ${idx + 1}:\n    Text: ${chunk.text?.slice(0, 200)}...\n    cloudinaryUrl: ${chunk.cloudinaryUrl}`);
+    });
+    // Collect unique PDF URLs
+    const pdfUrls = Array.from(new Set(topChunks.map((d) => d.cloudinaryUrl).filter(Boolean)));
 
     // 2. Build a STRICT RAG system prompt
     const systemPrompt = `You are an AI assistant for the Urban Land Ceiling Maharashtra portal. This website is for citizens to easily ask questions about public government documents (PDFs) uploaded by government bodies, instead of manually reading the documents.
 
 INSTRUCTIONS:
-- You must ONLY answer using the provided context below.
+- ALWAYS format your answers using Markdown. Use bullet points, numbered lists, headings, bold, italics, and relevant emojis to make the response beautiful, fun, and easy to read.
+- Use emojis for section headers, tips, and important points (e.g., 📄, 📝, ✅, ❗, ℹ️, 📌, etc.).
+- Use bullet points for lists, and bold or italicize key terms.
+- Add short headings for each section if possible.
 - If the answer is not found verbatim in the context, reply: "I could not find an answer in the uploaded documents. Please try rephrasing your question or check with the relevant department."
 - Do not use your own knowledge or make up any information.
 - Quote the relevant text from the context in your answer.
@@ -530,8 +537,6 @@ Query Translation:
 Context Guidelines:
 - You have access to the following context extracted from relevant documents:
 ${context || "No relevant context found."}
-
-Sources Referenced: ${sources.map((s) => `\n- ${s.filename || 'N/A'} (Paragraph: ${s.paragraphIndex ?? 'N/A'}, Page: ${s.pageNumber ?? 'N/A'})`).join("")}
 
 User's Last Message: "${lastMessage}"
 `;
@@ -566,7 +571,7 @@ User's Last Message: "${lastMessage}"
         {
           role: "assistant",
           content,
-          sources: sources, // Include source information
+          pdfUrls, // Only unique PDF URLs for the answer
           context: context ? "Relevant context found" : "No context available",
           originalQuery: lastMessage,
           translatedQuery,

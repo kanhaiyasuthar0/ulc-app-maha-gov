@@ -47,7 +47,8 @@ export default function AdminFlowDashboard() {
       // Build nodes and edges for React Flow
       const flowNodes: Node[] = [];
       const flowEdges: Edge[] = [];
-      jurisdictions.forEach((jur, i) => {
+      // Add type for jur
+      jurisdictions.forEach((jur: any, i: number) => {
         flowNodes.push({
           id: jur._id,
           type: 'input',
@@ -63,8 +64,8 @@ export default function AdminFlowDashboard() {
           },
           position: { x: 100 + i * 300, y: 50 },
         });
-        jur.subAdmins.forEach((subId, j) => {
-          const sub = subAdmins.find(s => s._id === subId);
+        jur.subAdmins.forEach((subId: any, j: number) => {
+          const sub = subAdmins.find((s: any) => s._id === subId);
           if (!sub) return;
           // PDF count: not available directly, show '-' for now
           // Pending tasks: not available directly, show 0 for now
