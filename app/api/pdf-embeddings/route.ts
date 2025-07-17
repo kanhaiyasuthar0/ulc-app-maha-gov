@@ -180,7 +180,7 @@ export async function POST(request: Request) {
 
     let status: 'ready' | 'failed' = 'ready';
     let result = [];
-    let pdfId = String(document._id);
+    const pdfId = String(document._id);
     try {
       // Extract text and pages
       const { pages, fullText: originalText } = await extractTextAndPagesFromPdf(buffer);
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
         sourceLanguage || undefined
       );
       // Chunk by paragraph, associate with page number
-      let docs: Document[] = [];
+      const docs: Document[] = [];
       let paraIdx = 0;
       // Use translatedText for chunking and embedding
       const translatedPages = translatedText.split(/\n\n+/);
